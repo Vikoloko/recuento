@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<title>Recuento cuentas cliente</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-title" content="Recuento">
+<style>
+:root{--bg:#f4f6f8;--card:#fff;--tx:#14213d;--mut:#667085;--ac:#0082c3;--ac2:#e6f3fa;--ln:#e4e7ec;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#101418;--card:#1a2027;--tx:#eef2f6;--mut:#98a2b3;--ac:#38a9e6;--ac2:#18303f;--ln:#2b333c}}
+:root[data-theme="dark"]{--bg:#101418;--card:#1a2027;--tx:#eef2f6;--mut:#98a2b3;--ac:#38a9e6;--ac2:#18303f;--ln:#2b333c}
+html{height:100%}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:760px;margin:0 auto;padding:16px}
+h1{font-size:22px;margin:4px 0 0}.sub{color:var(--mut);margin:0 0 14px}
+.card{background:var(--card);border:1px solid var(--ln);border-radius:14px;padding:14px;margin-bottom:14px}
+select,input,button{font:inherit;color:var(--tx)}
+select,input{background:var(--bg);border:1px solid var(--ln);border-radius:10px;padding:10px;width:100%;box-sizing:border-box}
+.big{font-size:42px;font-weight:700;color:var(--ac);line-height:1}
+.row{display:flex;gap:10px;align-items:center;margin-top:12px}
+#mas{flex:1;background:var(--ac);color:#fff;border:0;border-radius:12px;padding:18px;font-size:22px;font-weight:700}
+#des,.btn{background:transparent;border:1px solid var(--ln);border-radius:12px;padding:14px;cursor:pointer}
+button:disabled{opacity:.45}
+.tabs{display:flex;gap:6px;margin-bottom:10px}
+.tabs button{flex:1;border:1px solid var(--ln);background:var(--card);border-radius:10px;padding:9px;cursor:pointer}
+.tabs button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.wrap{overflow-x:auto;border:1px solid var(--ln);border-radius:12px;background:var(--card)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:8px 10px;text-align:center;border-bottom:1px solid var(--ln);white-space:nowrap}
+th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:var(--card)}
+thead th{background:var(--ac2)}
+tr.me td{background:var(--ac2);font-weight:600}
+tr.tot td{font-weight:700;border-top:2px solid var(--ln)}
+.cur{font-weight:700}
+.msg{color:var(--mut);font-size:13px;margin:8px 2px}
+details{margin-top:6px}summary{cursor:pointer;color:var(--mut)}
+.g{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px}
+</style></head><body><main>
+<h1>Recuento cuentas cliente</h1>
+<p class="sub"><span id="sem">cargando…</span></p>
+
+<div class="card">
+  <div class="msg" id="hola" style="margin-top:0"></div>
+  <div class="row" style="justify-content:space-between"><div><div class="big" id="mine">–</div><div class="msg" style="margin:4px 0 0">tus cuentas esta semana</div></div></div>
+  <div class="row"><button id="mas">+1 cuenta</button><button id="des" title="Quitar la última">↩︎</button></div>
+  <div class="msg" id="st"></div>
+</div>
+
+<div class="tabs"><button data-t="s" class="on">Semanas</button><button data-t="m">Meses</button><button data-t="t">Total</button></div>
+<div class="wrap"><table id="tb"></table></div>
+
+<details><summary>Corregir o añadir cuentas de otra semana (solo las tuyas)</summary>
+  <div class="g" style="grid-template-columns:1fr 1fr"><select id="aw"></select><input id="an" type="number" value="1"></div>
+  <div class="row"><button class="btn" id="ab">Añadir (usa negativo para restar)</button></div>
+</details>
+
+<script>
+const API="https://script.google.com/macros/s/AKfycbxsyKTobMG0Xu6h-yYWLCiCIvgH1b8eJtJMGPnBgf09KX9wAiHYkdG2gHBgHcQCX04V/exec";
+const MES=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+const $=id=>document.getElementById(id);
+let D=null,tab="s",busy=false,tok=new URLSearchParams(location.search).get("t")||"";
+try{if(tok)localStorage.setItem("t",tok);else tok=localStorage.getItem("t")||""}catch(e){}
+function monthOf(w){const j=new Date(Date.UTC(D.year,0,4)),o=j.getUTCDay()||7;return new Date(Date.UTC(D.year,0,4-o+1+(w-1)*7+3)).getUTCMonth()}
+function render(){
+  if(!D)return;
+  const CW=D.semana,me=D.yo,ws=[];for(let w=D.start;w<=CW;w++)ws.push(w);
+  $("sem").textContent="semana "+CW;
+  $("aw").innerHTML=ws.slice().reverse().map(w=>`<option value="${w}">Semana ${w}</option>`).join("");
+  const tot=p=>Object.values(p.w).reduce((a,b)=>a+b,0);
+  const cell=(p,f)=>Object.entries(p.w).reduce((a,[w,n])=>f(+w)?a+n:a,0);
+  let cols=[];
+  if(tab==="s")cols=ws.map(w=>({h:"S"+w,k:w===CW,f:x=>x===w}));
+  else if(tab==="m")cols=[...new Set(ws.map(monthOf))].map(m=>({h:MES[m].slice(0,3),f:x=>monthOf(x)===m}));
+  const order=D.personas.slice();if(tab==="t")order.sort((a,b)=>tot(b)-tot(a));
+  const ct=cols.map(()=>0);let all=0;
+  let h="<thead><tr><th>Nombre</th>"+cols.map(c=>`<th class="${c.k?"cur":""}">${c.h}</th>`).join("")+"<th>Total</th></tr></thead><tbody>";
+  order.forEach(p=>{const t=tot(p);all+=t;h+=`<tr class="${p.key===me?"me":""}"><td>${p.nombre}</td>`+cols.map((c,i)=>{const v=cell(p,c.f);ct[i]+=v;return `<td>${v}</td>`}).join("")+`<td><b>${t}</b></td></tr>`});
+  h+=`<tr class="tot"><td>TOTAL EQUIPO</td>${ct.map(v=>`<td>${v}</td>`).join("")}<td>${all}</td></tr></tbody>`;
+  $("tb").innerHTML=h;
+  const mp=D.personas.find(p=>p.key===me),own=mp?(mp.w[CW]||0):0;
+  $("hola").textContent=mp?"Hola, "+mp.nombre.split(" ")[0]+". Solo puedes modificar tus propias cuentas.":"Abre tu enlace personal para poder sumar cuentas.";
+  $("mine").textContent=mp?own:"–";
+  $("mas").disabled=!mp||busy;$("des").disabled=!mp||own<=0||busy;$("ab").disabled=!mp||busy;
+}
+async function cargar(){try{const r=await fetch(API+"?t="+encodeURIComponent(tok));D=await r.json();$("st").textContent="";render()}catch(e){$("st").textContent="Sin conexión. Reintentando…"}}
+async function enviar(w,n){busy=true;render();try{const r=await fetch(API,{method:"POST",body:JSON.stringify({t:tok,w:w,n:n})});const j=await r.json();if(j.error)$("st").textContent=j.error;else{D=j;$("st").textContent=""}}catch(e){$("st").textContent="No se pudo guardar. Inténtalo otra vez."}busy=false;render()}
+$("mas").onclick=()=>enviar(D.semana,1);
+$("des").onclick=()=>enviar(D.semana,-1);
+$("ab").onclick=()=>{const n=parseInt($("an").value,10);if(n)enviar(+$("aw").value,n)};
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{tab=b.dataset.t;document.querySelectorAll(".tabs button").forEach(x=>x.classList.toggle("on",x===b));render()});
+cargar();setInterval(()=>{if(!busy)cargar()},30000);
+</script></main></body></html>
