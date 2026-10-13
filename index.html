@@ -61,7 +61,8 @@ td.edit{cursor:pointer}td.edit:hover{background:#dff0fa!important}
 select,input{font:inherit;color:var(--tx);background:#fff;border:1px solid var(--ln);border-radius:8px;padding:10px;width:100%}
 .pri{background:var(--navy);color:#fff;border:0;padding:11px 16px;font-weight:600}
 details summary{cursor:pointer;font-weight:600}
-#st{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--navy);color:#fff;padding:10px 16px;border-radius:8px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%}
+#dlg{position:fixed;inset:0;background:rgba(11,37,69,.55);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}#dlg[hidden]{display:none}.box{background:#fff;border-radius:12px;padding:18px;width:100%;max-width:420px}.box p{margin:6px 0 12px}.er{color:#b42318;min-height:20px;margin:6px 0 10px;font-size:14px}.row2{display:flex;gap:10px;justify-content:flex-end}
+#st{z-index:20;position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--navy);color:#fff;padding:10px 16px;border-radius:8px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%}
 #st.show{opacity:1}#st.err{background:#b42318}
 @media(max-width:640px){.kpis{grid-template-columns:1fr}.k{font-size:40px}.grid{grid-template-columns:1fr 1fr}.grid .pri{grid-column:1/-1}}
 </style></head><body>
@@ -69,7 +70,7 @@ details summary{cursor:pointer;font-weight:600}
 <main>
 <section class="panel hero">
   <div><div class="k" id="mine">–</div><div class="lbl">Tus cuentas esta semana</div><div class="mut" id="mytot">Abre tu enlace personal para poder sumar cuentas.</div></div>
-  <div class="acts"><button id="mas">+1 cuenta</button><button id="des" class="ghost" title="Quitar la última cuenta">Quitar</button></div>
+  <div class="acts"><button id="mas" disabled>+1 cuenta</button><button id="des" class="ghost" disabled title="Quitar la última cuenta">Quitar</button></div>
 </section>
 <section class="kpis"><div><b id="kw">0</b><span>Equipo esta semana</span></div><div><b id="kt">0</b><span>Equipo en la temporada</span></div><div><b id="kp">0</b><span>Media semanal del equipo</span></div></section>
 
@@ -85,11 +86,15 @@ details summary{cursor:pointer;font-weight:600}
   <div class="mut" id="acur" style="margin-top:6px"></div>
 </section>
 
-<section class="panel"><details><summary>Añadir o quitar cuentas de otra semana (solo las tuyas)</summary>
-  <div class="grid" style="grid-template-columns:1fr 1fr auto"><select id="aw"></select><input id="an" type="number" value="1"><button class="pri" id="ab">Aplicar</button></div>
-  <div class="mut" style="margin-top:6px">Usa un número negativo para restar.</div>
+<section class="panel"><details><summary>Añadir o quitar una cuenta de otra semana (solo las tuyas)</summary>
+  <div class="grid" style="grid-template-columns:1fr auto auto"><select id="aw"></select><button class="pri" id="ab" disabled>Añadir con correo</button><button class="ghost" id="aq" disabled>Quitar una</button></div>
 </details></section>
 </main>
+<div id="dlg" hidden><div class="box"><h2>Nueva cuenta de <span id="mw"></span></h2>
+<p class="mut">Escribe el correo con el que el cliente ha creado su cuenta Decathlon. Se guarda con tu nombre y se comprueba que no esté repetido.</p>
+<input id="em" type="email" inputmode="email" autocomplete="off" autocapitalize="off" placeholder="correo@ejemplo.com">
+<div id="er" class="er"></div>
+<div class="row2"><button class="ghost" id="ec">Cancelar</button><button class="pri" id="eg">Guardar cuenta</button></div></div></div>
 <div id="st"></div>
 <script>
 const API="https://script.google.com/macros/s/AKfycbxsyKTobMG0Xu6h-yYWLCiCIvgH1b8eJtJMGPnBgf09KX9wAiHYkdG2gHBgHcQCX04V/exec";
@@ -130,14 +135,22 @@ function render(){
   opt("ap",D.personas.map(p=>`<option value="${p.key}">${p.nombre}</option>`).join(""));
   if(!$("aw2").dataset.set){$("aw2").value=CW;$("aw2").dataset.set=1}
   acur();
-  $("mas").disabled=!mp||busy;$("des").disabled=!mp||own<=0||busy;$("ab").disabled=!mp||busy;$("ab2").disabled=busy;
+  $("mas").disabled=!mp||busy;$("des").disabled=!mp||own<=0||busy;$("ab").disabled=!mp||busy;$("aq").disabled=!mp||busy;$("ab2").disabled=busy;
 }
 function acur(){if(!D)return;const p=D.personas.find(x=>x.key===$("ap").value);$("acur").textContent=p?"Valor actual: "+(p.w[$("aw2").value]||0):""}
 async function cargar(){try{const r=await fetch(API+"?t="+encodeURIComponent(tok));D=await r.json();render()}catch(e){msg("Sin conexión. Reintentando…",1)}}
-async function post(o){busy=true;render();try{const r=await fetch(API,{method:"POST",body:JSON.stringify(Object.assign({t:tok},o))});const j=await r.json();if(j.error)msg(j.error,1);else{D=j;msg("Guardado")}}catch(e){msg("No se pudo guardar. Inténtalo otra vez.",1)}busy=false;render()}
-$("mas").onclick=()=>post({w:D.semana,n:1});
+let lastErr="";
+async function post(o,quiet){busy=true;render();let ok=false;try{const r=await fetch(API,{method:"POST",body:JSON.stringify(Object.assign({t:tok},o))});const j=await r.json();if(j.error){lastErr=j.error;if(!quiet)msg(j.error,1)}else{D=j;ok=true;msg("Guardado")}}catch(e){lastErr="No se pudo guardar. Inténtalo otra vez.";if(!quiet)msg(lastErr,1)}busy=false;render();return ok}
+let mw=0;
+function abrir(w){if(!D)return;mw=w;$("mw").textContent=w===D.semana?"esta semana":"la semana "+w;$("em").value="";$("er").textContent="";$("dlg").hidden=false;setTimeout(()=>$("em").focus(),50)}
+function cerrar(){$("dlg").hidden=true}
+$("ec").onclick=cerrar;
+$("em").onkeydown=e=>{if(e.key==="Enter")$("eg").click()};
+$("eg").onclick=async()=>{const e=$("em").value.trim().toLowerCase();if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e)){$("er").textContent="Escribe un correo válido.";return}$("eg").disabled=true;$("er").textContent="Comprobando…";const ok=await post({w:mw,email:e},true);$("eg").disabled=false;if(ok)cerrar();else $("er").textContent=lastErr};
+$("mas").onclick=()=>abrir(D.semana);
 $("des").onclick=()=>post({w:D.semana,n:-1});
-$("ab").onclick=()=>{const n=parseInt($("an").value,10);if(n)post({w:+$("aw").value,n:n})};
+$("ab").onclick=()=>abrir(+$("aw").value);
+$("aq").onclick=()=>post({w:+$("aw").value,n:-1});
 $("ab2").onclick=()=>{const v=parseInt($("at").value,10);if(isNaN(v)||v<0){msg("Escribe un total válido.",1);return}post({p:$("ap").value,w:+$("aw2").value,total:v})};
 $("ap").onchange=acur;$("aw2").onchange=acur;
 $("tb").onclick=e=>{const c=e.target.closest("td[data-k]");if(!c||!D.admin)return;$("ap").value=c.dataset.k;$("aw2").value=c.dataset.w;acur();$("adminp").scrollIntoView({behavior:"smooth",block:"center"});$("at").focus()};
