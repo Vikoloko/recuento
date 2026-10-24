@@ -64,7 +64,32 @@ details summary{cursor:pointer;font-weight:600}
 #dlg{position:fixed;inset:0;background:rgba(11,37,69,.55);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}#dlg[hidden]{display:none}.box{background:#fff;border-radius:12px;padding:18px;width:100%;max-width:420px}.box p{margin:6px 0 12px}.er{color:#b42318;min-height:20px;margin:6px 0 10px;font-size:14px}.row2{display:flex;gap:10px;justify-content:flex-end}
 #st{z-index:20;position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--navy);color:#fff;padding:10px 16px;border-radius:8px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%}
 #st.show{opacity:1}#st.err{background:#b42318}
-@media(max-width:640px){.kpis{grid-template-columns:1fr}.k{font-size:40px}.grid{grid-template-columns:1fr 1fr}.grid .pri{grid-column:1/-1}}
+.rv-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.rv-n{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.rv-n span{background:#f2f5f8;border-radius:999px;padding:4px 12px;font-size:13px;color:var(--mut)}
+.rv-n b{color:var(--tx)}
+.rv-f{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.seg{display:inline-flex;border:1px solid var(--ln);border-radius:8px;overflow:hidden;background:#fff}
+.seg button{border:0;border-radius:0;background:#fff;padding:8px 12px;color:var(--mut);font-size:14px;white-space:nowrap}
+.seg button+button{border-left:1px solid var(--ln)}
+.seg button.on{background:var(--navy);color:#fff}
+.rv-f select{width:auto;min-width:170px;padding:8px 10px}
+.rv-s{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.rv-s button{background:#fff;border:1px solid var(--ln);padding:5px 11px;font-size:13px;color:var(--tx)}
+.rv-s button.warn{border-color:#f0b429;background:#fff8e6}
+.rv-s button.sel{background:var(--navy);border-color:var(--navy);color:#fff}
+.rv-l{margin-top:12px;display:grid;gap:8px}
+.rv-i{border:1px solid var(--ln);border-radius:8px;padding:11px 12px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;border-left:4px solid #c9d1db}
+.rv-i.si{border-left-color:var(--ok)}.rv-i.no{border-left-color:#b42318;background:#fff7f6}
+.rv-m{min-width:0;flex:1 1 230px}
+.rv-c{font:600 15px/1.3 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;word-break:break-all}
+.rv-a{display:flex;gap:8px;flex-wrap:wrap}
+.rv-a button{padding:8px 12px;font-size:14px;border:1px solid var(--ln);background:#fff;color:var(--tx)}
+.rv-a .y{background:var(--ok);border-color:var(--ok);color:#fff}
+.rv-a .x{background:#b42318;border-color:#b42318;color:#fff}
+.tag{display:inline-block;border-radius:999px;padding:1px 9px;font-size:12px;font-weight:600;margin-left:6px}
+.tag.si{background:#e3f4ec;color:var(--ok)}.tag.no{background:#fde8e6;color:#b42318}
+@media(max-width:640px){.seg button{padding:8px 9px;font-size:13px}.kpis{grid-template-columns:1fr}.k{font-size:40px}.grid{grid-template-columns:1fr 1fr}.grid .pri{grid-column:1/-1}}
 </style></head><body>
 <header><div class="in"><div><h1>Recuento cuentas cliente</h1><div class="sub" id="sem">Cargando…</div></div><div class="chips"><span class="chip" id="who">Sin identificar</span><span class="chip adm" id="adm" hidden>Administrador</span></div></div></header>
 <main>
@@ -84,6 +109,15 @@ details summary{cursor:pointer;font-weight:600}
   <h2>Administración</h2><div class="mut">Solo tú puedes modificar los datos de cualquier persona. También puedes pulsar una celda de la tabla.</div>
   <div class="grid"><select id="ap"></select><select id="aw2"></select><input id="at" type="number" min="0" placeholder="Total"><button class="pri" id="ab2">Guardar</button></div>
   <div class="mut" id="acur" style="margin-top:6px"></div>
+</section>
+
+<section class="panel" id="revp" hidden>
+  <div class="rv-top"><div><h2>Revisión de cuentas</h2><div class="mut">Comprueba cada correo en CubeInStore. «No existe» resta la cuenta del total automáticamente.</div></div></div>
+  <div class="rv-n" id="rvn"></div>
+  <div class="rv-f"><div class="seg" id="rvf"></div><select id="rvp"></select></div>
+  <div class="rv-s" id="rvs"></div>
+  <div class="rv-l" id="rvl"></div>
+  <div class="mut" id="rvm" style="margin-top:10px"></div>
 </section>
 
 <section class="panel"><details><summary>Añadir o quitar una cuenta de otra semana (solo las tuyas)</summary>
@@ -134,7 +168,7 @@ function render(){
   opt("aw2",ws.slice().reverse().map(w=>`<option value="${w}">Semana ${w}</option>`).join(""));
   opt("ap",D.personas.map(p=>`<option value="${p.key}">${p.nombre}</option>`).join(""));
   if(!$("aw2").dataset.set){$("aw2").value=CW;$("aw2").dataset.set=1}
-  acur();
+  acur();renderRev();
   $("mas").disabled=!mp||busy;$("des").disabled=!mp||own<=0||busy;$("ab").disabled=!mp||busy;$("aq").disabled=!mp||busy;$("ab2").disabled=busy;
 }
 function acur(){if(!D)return;const p=D.personas.find(x=>x.key===$("ap").value);$("acur").textContent=p?"Valor actual: "+(p.w[$("aw2").value]||0):""}
@@ -155,5 +189,38 @@ $("ab2").onclick=()=>{const v=parseInt($("at").value,10);if(isNaN(v)||v<0){msg("
 $("ap").onchange=acur;$("aw2").onchange=acur;
 $("tb").onclick=e=>{const c=e.target.closest("td[data-k]");if(!c||!D.admin)return;$("ap").value=c.dataset.k;$("aw2").value=c.dataset.w;acur();$("adminp").scrollIntoView({behavior:"smooth",block:"center"});$("at").focus()};
 document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{tab=b.dataset.t;document.querySelectorAll(".tabs button").forEach(x=>x.classList.toggle("on",x===b));render()});
+let rvF="Pendiente",rvP="",rvMax=40;
+const esc=t=>String(t).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function renderRev(){
+  const on=!!(D&&D.admin&&D.revision);$("revp").hidden=!on;if(!on)return;
+  const R=D.revision,um=D.umbral||2,nom=k=>{const p=D.personas.find(x=>x.key===k);return p?p.nombre:k};
+  const cnt={Pendiente:0,"No existe":0,"Sí":0};R.forEach(r=>cnt[r.r]++);
+  $("rvn").innerHTML=`<span><b>${cnt.Pendiente}</b> pendientes</span><span><b>${cnt["Sí"]}</b> correctas</span><span><b>${cnt["No existe"]}</b> no existen</span>`;
+  const fl=[["Pendiente","Pendientes"],["No existe","No existen"],["Sí","Correctas"],["","Todas"]];
+  $("rvf").innerHTML=fl.map(f=>`<button data-f="${f[0]}" class="${rvF===f[0]?"on":""}">${f[1]}</button>`).join("");
+  const pp=D.personas.filter(p=>R.some(r=>r.p===p.key));
+  opt("rvp",'<option value="">Todas las personas</option>'+pp.map(p=>`<option value="${p.key}">${esc(p.nombre)}</option>`).join(""));
+  $("rvp").value=rvP;
+  const bad={};R.forEach(r=>{if(r.r==="No existe")bad[r.p]=(bad[r.p]||0)+1});
+  const bk=Object.keys(bad).sort((a,b)=>bad[b]-bad[a]);
+  $("rvs").innerHTML=bk.length?bk.map(k=>`<button data-p="${k}" class="${bad[k]>=um?"warn":""} ${rvP===k?"sel":""}">${bad[k]>=um?"⚠ ":""}${esc(nom(k))}: ${bad[k]} no existe${bad[k]>1?"n":""}</button>`).join(""):"";
+  let L=R.filter(r=>(!rvF||r.r===rvF)&&(!rvP||r.p===rvP)).sort((a,b)=>b.f-a.f);
+  const tot=L.length;L=L.slice(0,rvMax);
+  $("rvl").innerHTML=L.length?L.map(r=>{
+    const c=r.r==="Sí"?"si":r.r==="No existe"?"no":"",d=r.f?new Date(r.f).toLocaleDateString("es-ES",{day:"numeric",month:"short"}):"";
+    const b=r.r==="Pendiente"?`<button class="y" data-r="Sí">Existe</button><button class="x" data-r="No existe">No existe</button>`:`<button data-r="Pendiente">Deshacer</button>`;
+    return `<div class="rv-i ${c}" data-id="${esc(r.id)}"><div class="rv-m"><div class="rv-c">${esc(r.c)}${c?`<span class="tag ${c}">${r.r}</span>`:""}</div><div class="mut">${esc(nom(r.p))} · semana ${r.w}${d?" · "+d:""}</div></div><div class="rv-a"><button data-cp="1">Copiar</button>${b}</div></div>`}).join(""):`<div class="mut">No hay cuentas en este filtro.</div>`;
+  $("rvm").innerHTML=tot>L.length?`Mostrando ${L.length} de ${tot}. <a href="#" id="rvmas">Ver más</a>`:(R.length>=800?"Solo se muestran las últimas 800 cuentas.":"");
+}
+$("rvf").onclick=e=>{const b=e.target.closest("button");if(!b)return;rvF=b.dataset.f;rvMax=40;renderRev()};
+$("rvp").onchange=()=>{rvP=$("rvp").value;rvMax=40;renderRev()};
+$("rvs").onclick=e=>{const b=e.target.closest("button");if(!b)return;rvP=rvP===b.dataset.p?"":b.dataset.p;rvMax=40;renderRev()};
+$("rvm").onclick=e=>{if(e.target.id==="rvmas"){e.preventDefault();rvMax+=60;renderRev()}};
+$("rvl").onclick=async e=>{
+  const b=e.target.closest("button"),it=e.target.closest(".rv-i");if(!b||!it||busy)return;
+  const r=D.revision.find(x=>x.id===it.dataset.id);if(!r)return;
+  if(b.dataset.cp){try{await navigator.clipboard.writeText(r.c);msg("Correo copiado")}catch(x){const t=document.createElement("textarea");t.value=r.c;document.body.appendChild(t);t.select();try{document.execCommand("copy");msg("Correo copiado")}catch(y){msg("No se pudo copiar",1)}t.remove()}return}
+  if(b.dataset.r)post({rev:{id:r.id,r:b.dataset.r}});
+};
 cargar();setInterval(()=>{if(!busy&&!document.hidden)cargar()},30000);
 </script></body></html>
