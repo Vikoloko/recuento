@@ -11,6 +11,8 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icono-192.png">
 <meta name="color-scheme" content="light">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,600;0,700;1,800;1,900&display=swap">
 <style>
 :root{--navy:#0b2545;--ac:#0082c3;--acd:#006aa0;--bg:#f2f4f7;--card:#fff;--tx:#1d2939;--mut:#667085;--ln:#e3e7ec;--ok:#1b7f5a;--soft:#eaf4fb}
 *{box-sizing:border-box}
@@ -89,6 +91,14 @@ details summary{cursor:pointer;font-weight:600}
 .rv-a .x{background:#b42318;border-color:#b42318;color:#fff}
 .tag{display:inline-block;border-radius:999px;padding:1px 9px;font-size:12px;font-weight:600;margin-left:6px}
 .tag.si{background:#e3f4ec;color:var(--ok)}.tag.no{background:#fde8e6;color:#b42318}
+.wk{border:1px solid var(--ln);background:#fff;padding:6px 12px;font-size:14px;color:var(--tx)}
+.wk.on{background:var(--navy);border-color:var(--navy);color:#fff}
+.inf-w{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.inf-v{display:grid;gap:16px;margin-top:14px}
+.inf-v canvas{width:100%;height:auto;border-radius:8px;border:1px solid var(--ln);display:block}
+.inf-h{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.inf-h b{font-size:15px}.inf-h div{display:flex;gap:8px}
+.inf-h button{padding:8px 12px;font-size:14px}
 @media(max-width:640px){.seg button{padding:8px 9px;font-size:13px}.kpis{grid-template-columns:1fr}.k{font-size:40px}.grid{grid-template-columns:1fr 1fr}.grid .pri{grid-column:1/-1}}
 </style></head><body>
 <header><div class="in"><div><h1>Recuento cuentas cliente</h1><div class="sub" id="sem">Cargando…</div></div><div class="chips"><span class="chip" id="who">Sin identificar</span><span class="chip adm" id="adm" hidden>Administrador</span></div></div></header>
@@ -109,6 +119,12 @@ details summary{cursor:pointer;font-weight:600}
   <h2>Administración</h2><div class="mut">Solo tú puedes modificar los datos de cualquier persona. También puedes pulsar una celda de la tabla.</div>
   <div class="grid"><select id="ap"></select><select id="aw2"></select><input id="at" type="number" min="0" placeholder="Total"><button class="pri" id="ab2">Guardar</button></div>
   <div class="mut" id="acur" style="margin-top:6px"></div>
+</section>
+
+<section class="panel" id="infp" hidden>
+  <h2>Informe semanal</h2><div class="mut">Elige las semanas y descarga las imágenes de clasificación y top 3 para pegarlas en tu correo (máximo 4 semanas).</div>
+  <div class="inf-w" id="infw"></div>
+  <div class="inf-v" id="infv"></div>
 </section>
 
 <section class="panel" id="revp" hidden>
@@ -168,7 +184,7 @@ function render(){
   opt("aw2",ws.slice().reverse().map(w=>`<option value="${w}">Semana ${w}</option>`).join(""));
   opt("ap",D.personas.map(p=>`<option value="${p.key}">${p.nombre}</option>`).join(""));
   if(!$("aw2").dataset.set){$("aw2").value=CW;$("aw2").dataset.set=1}
-  acur();renderRev();
+  acur();renderInf();renderRev();
   $("mas").disabled=!mp||busy;$("des").disabled=!mp||own<=0||busy;$("ab").disabled=!mp||busy;$("aq").disabled=!mp||busy;$("ab2").disabled=busy;
 }
 function acur(){if(!D)return;const p=D.personas.find(x=>x.key===$("ap").value);$("acur").textContent=p?"Valor actual: "+(p.w[$("aw2").value]||0):""}
@@ -222,5 +238,96 @@ $("rvl").onclick=async e=>{
   if(b.dataset.cp){try{await navigator.clipboard.writeText(r.c);msg("Correo copiado")}catch(x){const t=document.createElement("textarea");t.value=r.c;document.body.appendChild(t);t.select();try{document.execCommand("copy");msg("Correo copiado")}catch(y){msg("No se pudo copiar",1)}t.remove()}return}
   if(b.dataset.r)post({rev:{id:r.id,r:b.dataset.r}});
 };
+/* ---------- Informe semanal: imágenes ---------- */
+const INF={sel:new Set(),init:false,tk:0};
+const FF='Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+const C_BLUE="#3643ba",C_DEEP="#283296",C_YEL="#ffd600",C_LIGHT="#b8c0f6",C_DIM="#808ce2",C_LINE="#5c69d4",C_W="#fff";
+const FT={blk:n=>`italic 900 ${n}px ${FF}`,xb:n=>`italic 800 ${n}px ${FF}`,semi:n=>`600 ${n}px ${FF}`,bold:n=>`700 ${n}px ${FF}`};
+function mkc(W,H){const c=document.createElement("canvas");c.width=W*2;c.height=H*2;const x=c.getContext("2d");x.scale(2,2);x.fillStyle=C_BLUE;x.fillRect(0,0,W,H);x.textBaseline="alphabetic";return{c:c,x:x,W:W,H:H}}
+function itx(o,X,Y,t,font,fill,al,tr){al=al||"l";tr=tr||0;const x=o.x;x.font=font;x.fillStyle=fill;x.textAlign="left";
+  const w=tr?[...t].reduce((a,ch)=>a+x.measureText(ch).width+tr,-tr):x.measureText(t).width;
+  let px=al==="r"?X-w:al==="c"?X-w/2:X;
+  if(!tr){x.fillText(t,px,Y);return}
+  for(const ch of t){x.fillText(ch,px,Y);px+=x.measureText(ch).width+tr}}
+function irc(o,a,b,c,d,f){o.x.fillStyle=f;o.x.fillRect(a,b,c-a,d-b)}
+function iln(o,a,b,c,d,f,w){const x=o.x;x.strokeStyle=f;x.lineWidth=w||1;x.beginPath();x.moveTo(a,b);x.lineTo(c,d);x.stroke()}
+function ipa(o,x0,y0,x1,y1,sk,f){const x=o.x;x.fillStyle=f;x.beginPath();x.moveTo(x0+sk,y0);x.lineTo(x1,y0);x.lineTo(x1-sk,y1);x.lineTo(x0,y1);x.closePath();x.fill()}
+function ihead(o,title,size,sub){irc(o,48,34,100,40,C_YEL);itx(o,48,128,title,FT.blk(size),C_W);
+  itx(o,o.W-48,92,"RECUENTO CUENTAS CLIENTE",FT.bold(12),C_LIGHT,"r",2);itx(o,o.W-48,114,sub,FT.bold(12),C_YEL,"r",2);itx(o,o.W-48,136,"DECATHLON TERRASSA",FT.bold(12),C_LIGHT,"r",2)}
+function iwr(w){const M=["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"],j=new Date(Date.UTC(D.year,0,4)),o=j.getUTCDay()||7,a=new Date(Date.UTC(D.year,0,4-o+1+(w-1)*7)),b=new Date(a.getTime()+5*864e5);
+  return a.getUTCMonth()===b.getUTCMonth()?`${a.getUTCDate()} – ${b.getUTCDate()} ${M[b.getUTCMonth()]}`:`${a.getUTCDate()} ${M[a.getUTCMonth()]} – ${b.getUTCDate()} ${M[b.getUTCMonth()]}`}
+const isub=ws=>ws.length===1?"SEMANA "+ws[0]:"SEMANAS "+ws.join(" · ");
+const ival=(p,w)=>p.w[w]||0;
+function idTop(ws){
+  const n=ws.length,cw=352,gap=24,tw=n*cw+(n-1)*gap,W=Math.max(760,96+tw),H=770,x0=(W-tw)/2,o=mkc(W,H);
+  ihead(o,"TOP 3",92,isub(ws));
+  ws.forEach((wk,i)=>{
+    const x=x0+i*(cw+gap),all=D.personas.map(p=>({n:p.nombre,v:ival(p,wk)})),tot=all.reduce((a,r)=>a+r.v,0);
+    const top=all.filter(r=>r.v>0).sort((a,b)=>b.v-a.v||a.n.localeCompare(b.n,"es")).slice(0,3);
+    itx(o,x,222,"SEMANA",FT.bold(13),C_LIGHT,"l",3);itx(o,x,330,String(wk),FT.blk(118),C_W);
+    itx(o,x+cw,330,iwr(wk),FT.bold(12),C_LIGHT,"r",2);iln(o,x,352,x+cw,352,C_W,2);
+    const ry=366,rh=100;
+    for(let r=0;r<3;r++){
+      const y=ry+r*rh,e=top[r],first=r===0;
+      if(first)ipa(o,x-6,y+4,x+cw+6,y+rh-4,16,C_YEL);else iln(o,x,y,x+cw,y,C_LINE,1.5);
+      if(!e)continue;
+      const fg=first?C_BLUE:C_W,rk=first?C_BLUE:C_LIGHT,mid=y+rh/2;
+      itx(o,x+22,mid+16,String(r+1),FT.blk(46),rk);
+      itx(o,x+72,mid+7,e.n.toUpperCase(),FT.semi(first?17:18),fg,"l",.4);
+      itx(o,x+cw-24,mid+17,String(e.v),FT.blk(first?46:42),fg,"r");
+    }
+    const fy=ry+3*rh+14;iln(o,x,fy,x+cw,fy,C_W,2);
+    itx(o,x,fy+42,"TOTAL EQUIPO",FT.bold(12),C_LIGHT,"l",2);itx(o,x+cw,fy+46,String(tot),FT.blk(36),C_W,"r");
+  });
+  return o.c}
+function idCla(ws){
+  const n=ws.length,W=Math.max(1000,1200+(n-3)*150),totx=W-70,a0=560,a1=totx-170,slot=Math.min(150,(a1-a0)/n);
+  const cx=ws.map((w,i)=>a0+slot*(i+.5));
+  const rows=D.personas.map(p=>{const v=ws.map(w=>ival(p,w));return{n:p.nombre,v:v,t:v.reduce((a,b)=>a+b,0)}}).sort((a,b)=>b.t-a.t||a.n.localeCompare(b.n,"es"));
+  const rh=52,ty=262,fy=ty+rows.length*rh+16,H=fy+84,o=mkc(W,H);
+  ihead(o,"CLASIFICACIÓN",76,isub(ws));
+  itx(o,78,214,"#",FT.bold(13),C_LIGHT,"c",2);itx(o,128,214,"NOMBRE",FT.bold(13),C_LIGHT,"l",2);
+  ws.forEach((w,i)=>{itx(o,cx[i],214,"SEM "+w,FT.bold(13),C_W,"c",2);itx(o,cx[i],232,iwr(w),FT.bold(10),C_DIM,"c",1)});
+  itx(o,totx,214,"TOTAL",FT.bold(13),C_W,"r",2);iln(o,48,246,W-48,246,C_W,2);
+  const mx=ws.map((w,i)=>Math.max(...rows.map(r=>r.v[i])));
+  rows.forEach((r,j)=>{
+    const y=ty+j*rh,mid=y+rh/2,first=j===0;
+    if(first)ipa(o,42,y+3,W-42,y+rh-3,14,C_YEL);else if(j>1)iln(o,48,y,W-48,y,C_LINE,1.2);
+    const fg=first?C_BLUE:C_W;
+    itx(o,78,mid+9,String(j+1),FT.blk(24),first?C_BLUE:(j<3?C_W:C_DIM),"c");
+    itx(o,128,mid+7,r.n.toUpperCase(),FT.semi(17),fg,"l",.6);
+    r.v.forEach((v,i)=>{let col=(v===mx[i]&&v>0&&!first)?C_YEL:fg;if(v===0&&!first)col=C_DIM;itx(o,cx[i],mid+9,String(v),FT.xb(22),col,"c")});
+    itx(o,totx,mid+11,String(r.t),FT.blk(30),fg,"r");
+  });
+  irc(o,0,fy,W,fy+84,C_DEEP);iln(o,0,fy,W,fy,C_W,2);
+  itx(o,128,fy+50,"TOTAL EQUIPO",FT.bold(13),C_LIGHT,"l",2);
+  let gt=0;ws.forEach((w,i)=>{const t=rows.reduce((a,r)=>a+r.v[i],0);gt+=t;itx(o,cx[i],fy+53,String(t),FT.xb(26),C_W,"c")});
+  itx(o,totx,fy+58,String(gt),FT.blk(38),C_YEL,"r");
+  return o.c}
+async function infFuentes(){try{await Promise.all(["italic 900 20px Inter","italic 800 20px Inter","600 20px Inter","700 20px Inter"].map(f=>document.fonts.load(f,"AÓ09")))}catch(e){}}
+function infBajar(c,nom){c.toBlob(b=>{if(!b)return;const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=nom;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)},"image/png")}
+function infCopiar(c){c.toBlob(async b=>{try{await navigator.clipboard.write([new ClipboardItem({"image/png":b})]);msg("Imagen copiada")}catch(e){msg("No se pudo copiar. Usa Descargar.",1)}},"image/png")}
+async function infGen(){
+  if(!D||!D.admin)return;const tk=++INF.tk,ws=[...INF.sel].sort((a,b)=>a-b),box=$("infv");
+  if(!ws.length){box.innerHTML='<div class="mut">Elige al menos una semana.</div>';return}
+  await infFuentes();if(tk!==INF.tk)return;
+  const suf=ws.length===1?"semana-"+ws[0]:"semanas-"+ws.join("-");
+  const L=[["Clasificación completa",idCla(ws),"clasificacion-"+suf+".png"],["Top 3 por semana",idTop(ws),"top3-"+suf+".png"]];
+  box.innerHTML="";
+  L.forEach(it=>{const d=document.createElement("div"),h=document.createElement("div");h.className="inf-h";
+    h.innerHTML=`<b>${it[0]}</b><div>${window.ClipboardItem?'<button class="ghost" data-a="c">Copiar imagen</button>':""}<button class="pri" data-a="d">Descargar PNG</button></div>`;
+    h.onclick=e=>{const b=e.target.closest("button");if(!b)return;if(b.dataset.a==="d")infBajar(it[1],it[2]);else infCopiar(it[1])};
+    d.appendChild(h);d.appendChild(it[1]);box.appendChild(d)});
+}
+function renderInf(){
+  const on=!!(D&&D.admin);$("infp").hidden=!on;if(!on)return;
+  const ws=[];for(let w=D.start;w<=D.semana;w++)ws.push(w);ws.reverse();
+  if(!INF.init){INF.init=true;INF.sel.add(D.semana>D.start?D.semana-1:D.semana);
+    $("infw").innerHTML=ws.map(w=>`<button class="wk" data-w="${w}">Semana ${w}</button>`).join("");infGen()}
+  $("infw").querySelectorAll(".wk").forEach(b=>b.classList.toggle("on",INF.sel.has(+b.dataset.w)));
+}
+$("infw").onclick=e=>{const b=e.target.closest(".wk");if(!b)return;const w=+b.dataset.w;
+  if(INF.sel.has(w))INF.sel.delete(w);else{if(INF.sel.size>=4){msg("Máximo 4 semanas a la vez.",1);return}INF.sel.add(w)}
+  renderInf();infGen()};
 cargar();setInterval(()=>{if(!busy&&!document.hidden)cargar()},30000);
 </script></body></html>
