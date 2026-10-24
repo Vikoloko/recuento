@@ -133,6 +133,14 @@ details summary{cursor:pointer;font-weight:700;color:var(--deep)}
 .inf-h{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
 .inf-h b{font-size:15px}.inf-h div{display:flex;gap:8px}
 .inf-h button{padding:8px 12px;font-size:14px}
+.goal{margin-bottom:26px}
+.gh{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.gh b{font:italic 900 20px/1.1 var(--ff);text-transform:uppercase}
+.gh span{font:italic 900 22px/1.1 var(--ff);font-variant-numeric:tabular-nums}
+.gt{height:22px;background:var(--deep);border-radius:11px;overflow:hidden}
+.gt i{display:block;height:100%;background:var(--yel);border-radius:11px;min-width:0;transition:width .6s ease}
+.gm{margin-top:7px;font-weight:700;font-size:13px;color:var(--light)}
+.goal.ok .gm{color:var(--yel)}
 @media(max-width:640px){.seg button{padding:8px 9px;font-size:13px}.kpis{gap:8px}.kpis div{padding:10px 11px}.kpis b{font-size:26px}.kpis span{font-size:9.5px;letter-spacing:.06em;line-height:1.2;display:block;margin-top:2px}.grid{grid-template-columns:1fr 1fr}.grid .pri{grid-column:1/-1}.hero{align-items:stretch}.acts{max-width:none}}
 </style></head><body>
 <header><div class="in"><div class="brand"><img src="icono-192.png" alt=""><div><h1>Cuentas cliente</h1><div class="sub" id="sem">Cargando…</div></div></div><div class="chips"><span class="chip" id="who">Sin identificar</span><span class="chip adm" id="adm" hidden>Administrador</span></div></div></header>
@@ -142,6 +150,8 @@ details summary{cursor:pointer;font-weight:700;color:var(--deep)}
   <div class="acts"><button id="mas" disabled>+1 cuenta</button><button id="des" class="ghost" disabled title="Quitar la última cuenta">Quitar</button></div>
 </section>
 <section class="kpis"><div><b id="kw">0</b><span>Equipo esta semana</span></div><div><b id="kt">0</b><span>Equipo en la temporada</span></div><div><b id="kp">0</b><span>Media semanal del equipo</span></div></section>
+
+<section class="goal" id="goal"><div class="gh"><b id="gl">Objetivo del mes</b><span id="gn"></span></div><div class="gt"><i id="gb" style="width:0"></i></div><div class="gm" id="gx"></div></section>
 
 <section class="pub"><h2 class="ht">Podio de la semana</h2><div class="pod" id="pod"></div></section>
 
@@ -184,6 +194,7 @@ details summary{cursor:pointer;font-weight:700;color:var(--deep)}
 <div id="st"></div>
 <script>
 const API="https://script.google.com/macros/s/AKfycbxsyKTobMG0Xu6h-yYWLCiCIvgH1b8eJtJMGPnBgf09KX9wAiHYkdG2gHBgHcQCX04V/exec";
+const GOAL_MES=1000;
 const MES=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
 const $=id=>document.getElementById(id);
 let D=null,tab="s",busy=false,tok=new URLSearchParams(location.search).get("t")||"",tm;
@@ -201,6 +212,11 @@ function render(){
   $("mine").textContent=mp?own:"–";
   const wkr=D.personas.map(p=>({k:p.key,n:p.nombre,v:p.w[CW]||0})).sort((a,b)=>b.v-a.v||a.n.localeCompare(b.n,"es")),topw=wkr.filter(r=>r.v>0).slice(0,3);
   $("pod").innerHTML=topw.length?topw.map((r,i)=>`<div class="pr${i===0?" first":""}${r.k===me?" me":""}"><span class="n">${i+1}</span><span class="nm">${esc(r.n)}</span><span class="v">${r.v}</span></div>`).join(""):'<div class="pe">Todavía nadie ha sumado esta semana. ¡Sé el primero! 🚀</div>';
+  {const mo=monthOf(CW),tm=D.personas.reduce((a,p)=>a+Object.entries(p.w).reduce((b,[w,n])=>monthOf(+w)===mo?b+n:b,0),0),pc=Math.min(100,tm/GOAL_MES*100),
+    fin=Date.UTC(D.year,mo+1,1),dl=Math.max(0,Math.ceil((fin-Date.now())/864e5)),fa=GOAL_MES-tm;
+   $("gl").textContent="Objetivo de "+MES[mo];$("gn").textContent=tm+" / "+GOAL_MES;$("gb").style.width=pc+"%";
+   $("goal").classList.toggle("ok",fa<=0);
+   $("gx").textContent=fa<=0?"🏆 ¡Objetivo cumplido! Ya son "+(tm-GOAL_MES)+" por encima":"Faltan "+fa+" cuentas"+(dl>0?" · quedan "+dl+" día"+(dl>1?"s":""):"")+" · "+Math.floor(pc)+"%"}
   let rt="";
   if(mp){const ab=wkr.filter(r=>r.v>own),pos=ab.length+1,emp=wkr.some(r=>r.v===own&&r.k!==me);
     if(own===0&&wkr[0].v===0)rt="Sé el primero en sumar 🚀";
