@@ -2,8 +2,8 @@
   "name": "Cuentas Decathlon",
   "short_name": "Cuentas Decathlon",
   "display": "standalone",
-  "background_color": "#2f3aa8",
-  "theme_color": "#0b2545",
+  "background_color": "#3643ba",
+  "theme_color": "#283296",
   "icons": [
     {
       "src": "icono-192.png",

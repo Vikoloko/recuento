@@ -124,7 +124,7 @@ details summary{cursor:pointer;font-weight:700;color:var(--deep)}
 .rv-a .y{background:var(--ok);border-color:var(--ok);color:#fff}
 .rv-a .x{background:#b42318;border-color:#b42318;color:#fff}
 .tag{display:inline-block;border-radius:999px;padding:1px 9px;font-size:12px;font-weight:600;margin-left:6px}
-.tag.si{background:#e3f4ec;color:var(--ok)}.tag.no{background:#fde8e6;color:#b42318}
+.tag.nc{background:#e8ebfb;color:var(--deep)}.tag.si{background:#e3f4ec;color:var(--ok)}.tag.no{background:#fde8e6;color:#b42318}
 .wk{border:1px solid var(--ln);background:#fff;padding:6px 12px;font-size:14px;color:var(--tx)}
 .wk.on{background:var(--navy);border-color:var(--navy);color:#fff}
 .inf-w{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
@@ -163,8 +163,30 @@ nav#nav button{flex:1;max-width:240px;background:transparent;border:0;border-rad
 nav#nav button[hidden]{display:none}
 nav#nav button.on{color:var(--yel)}
 nav#nav button.on::before{content:"";position:absolute;top:0;left:30%;right:30%;height:3px;background:var(--yel);margin-top:-3px}
+#splash{position:fixed;inset:0;z-index:100;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;transition:opacity .45s ease,transform .45s ease}
+#splash.out{opacity:0;transform:translateY(-4%);pointer-events:none}
+.sp-bg i{position:absolute;left:-30%;width:160%;height:70px;background:var(--deep);opacity:.55;transform:skewY(-12deg);animation:spb 2.6s ease-in-out infinite alternate}
+.sp-bg i:nth-child(1){top:5%}.sp-bg i:nth-child(2){top:90%;height:14px;background:var(--yel);opacity:1;animation-delay:.25s}.sp-bg i:nth-child(3){top:79%;animation-delay:.5s}
+@keyframes spb{from{transform:translateX(-5%) skewY(-12deg)}to{transform:translateX(5%) skewY(-12deg)}}
+.sp-c{position:relative;text-align:center;padding:24px;max-width:100%}
+.sp-c img{width:84px;height:84px;border-radius:20px;box-shadow:0 8px 26px rgba(0,0,0,.28);animation:sppop .6s cubic-bezier(.2,1.4,.4,1) both}
+.sp-t{font-size:12px;font-weight:700;letter-spacing:.3em;color:var(--light);margin:18px 0 24px}
+.sp-w{visibility:hidden;min-height:clamp(120px,32vw,200px)}
+#splash.named .sp-w{visibility:visible}
+.sp-h{font:italic 900 clamp(34px,9vw,52px)/1 var(--ff)}
+.sp-n{font:italic 900 clamp(54px,17vw,120px)/.95 var(--ff);color:var(--yel);text-transform:uppercase;word-break:break-word}
+#splash.named .sp-n{animation:spnm .55s cubic-bezier(.2,1.3,.4,1) both}
+@keyframes spnm{from{opacity:0;transform:translateX(-24px) scale(.85)}to{opacity:1;transform:none}}
+@keyframes sppop{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
+.sp-s{margin-top:14px;font-weight:700;color:var(--light);min-height:22px}
+.sp-l{width:200px;height:6px;background:var(--deep);border-radius:3px;margin:22px auto 0;overflow:hidden}
+.sp-l b{display:block;height:100%;width:40%;background:var(--yel);border-radius:3px;animation:spl 1.1s ease-in-out infinite}
+#splash.ready .sp-l b{animation:none;width:100%;transition:width .4s}
+@keyframes spl{0%{margin-left:-40%}100%{margin-left:100%}}
+@media(prefers-reduced-motion:reduce){#splash *,#splash{animation:none!important;transition:none!important}}
 @media(max-width:640px){.seg button{padding:8px 9px;font-size:13px}.kpis{gap:8px}.kpis div{padding:10px 11px}.kpis b{font-size:26px}.kpis span{font-size:9.5px;letter-spacing:.06em;line-height:1.2;display:block;margin-top:2px}.grid{grid-template-columns:1fr 1fr}.grid .pri{grid-column:1/-1}.hero{align-items:stretch}.acts{max-width:none}}
 </style></head><body>
+<div id="splash"><div class="sp-bg"><i></i><i></i><i></i></div><div class="sp-c"><img src="icono-192.png" alt=""><div class="sp-t">CUENTAS CLIENTE</div><div class="sp-w"><div class="sp-h">HOLA,</div><div class="sp-n" id="spn"></div></div><div class="sp-s" id="sps">Cargando…</div><div class="sp-l"><b></b></div></div></div>
 <header><div class="in"><div class="brand"><img src="icono-192.png" alt=""><div><h1>Cuentas cliente</h1><div class="sub" id="sem">Cargando…</div></div></div><div class="chips"><span class="chip" id="who">Sin identificar</span><span class="chip adm" id="adm" hidden>Administrador</span></div></div></header>
 <main>
 <div class="view" id="v-inicio">
@@ -230,8 +252,8 @@ nav#nav button.on::before{content:"";position:absolute;top:0;left:30%;right:30%;
 <button data-v="admin" id="nav-admin" hidden><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg><span>Admin</span></button>
 </nav>
 <div id="dlg" hidden><div class="box"><h2>Nueva cuenta de <span id="mw"></span></h2>
-<p class="mut">Escribe el correo con el que el cliente ha creado su cuenta Decathlon. Se guarda con tu nombre y se comprueba que no esté repetido.</p>
-<input id="em" type="email" inputmode="email" autocomplete="off" autocapitalize="off" placeholder="correo@ejemplo.com">
+<p class="mut">Escribe el <b>correo</b> del cliente o su <b>nº de cliente</b> (13 cifras). Se guarda con tu nombre y se comprueba que no esté repetido. ¿No lo ves? Pídeselo al cliente.</p>
+<input id="em" type="text" inputmode="email" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="correo@ejemplo.com o nº de cliente">
 <div id="er" class="er"></div>
 <div class="row2"><button class="ghost" id="ec">Cancelar</button><button class="pri" id="eg">Guardar cuenta</button></div></div></div>
 <div id="st"></div>
@@ -291,7 +313,7 @@ function render(){
   $("mas").disabled=!mp||busy;$("des").disabled=!mp||own<=0||busy;$("ab").disabled=!mp||busy;$("aq").disabled=!mp||busy;$("ab2").disabled=busy;
 }
 function acur(){if(!D)return;const p=D.personas.find(x=>x.key===$("ap").value);$("acur").textContent=p?"Valor actual: "+(p.w[$("aw2").value]||0):""}
-async function cargar(){try{const r=await fetch(API+"?t="+encodeURIComponent(tok));D=await r.json();render()}catch(e){msg("Sin conexión. Reintentando…",1)}}
+async function cargar(){try{const r=await fetch(API+"?t="+encodeURIComponent(tok));D=await r.json();render();spReady()}catch(e){msg("Sin conexión. Reintentando…",1)}}
 let lastErr="";
 async function post(o,quiet){busy=true;render();let ok=false;try{const r=await fetch(API,{method:"POST",body:JSON.stringify(Object.assign({t:tok},o))});const j=await r.json();if(j.error){lastErr=j.error;if(!quiet)msg(j.error,1)}else{D=j;ok=true;msg("Guardado")}}catch(e){lastErr="No se pudo guardar. Inténtalo otra vez.";if(!quiet)msg(lastErr,1)}busy=false;render();return ok}
 let mw=0;
@@ -299,7 +321,7 @@ function abrir(w){if(!D)return;mw=w;$("mw").textContent=w===D.semana?"esta seman
 function cerrar(){$("dlg").hidden=true}
 $("ec").onclick=cerrar;
 $("em").onkeydown=e=>{if(e.key==="Enter")$("eg").click()};
-$("eg").onclick=async()=>{const e=$("em").value.trim().toLowerCase();if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e)){$("er").textContent="Escribe un correo válido.";return}$("eg").disabled=true;$("er").textContent="Comprobando…";const ok=await post({w:mw,email:e},true);$("eg").disabled=false;if(ok){cerrar();boom()}else $("er").textContent=lastErr};
+$("eg").onclick=async()=>{const e=$("em").value.trim().toLowerCase();const num=/^[\d\s-]+$/.test(e);if(num){if(e.replace(/[\s-]/g,"").length!==13){$("er").textContent="El nº de cliente tiene 13 cifras.";return}}else if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e)){$("er").textContent="Escribe un correo válido o el nº de cliente.";return}$("eg").disabled=true;$("er").textContent="Comprobando…";const ok=await post({w:mw,email:e},true);$("eg").disabled=false;if(ok){cerrar();boom()}else $("er").textContent=lastErr};
 $("mas").onclick=()=>abrir(D.semana);
 $("des").onclick=()=>post({w:D.semana,n:-1});
 $("ab").onclick=()=>abrir(+$("aw").value);
@@ -328,7 +350,7 @@ function renderRev(){
   $("rvl").innerHTML=L.length?L.map(r=>{
     const c=r.r==="Sí"?"si":r.r==="No existe"?"no":"",d=r.f?new Date(r.f).toLocaleDateString("es-ES",{day:"numeric",month:"short"}):"";
     const b=r.r==="Pendiente"?`<button class="y" data-r="Sí">Existe</button><button class="x" data-r="No existe">No existe</button>`:`<button data-r="Pendiente">Deshacer</button>`;
-    return `<div class="rv-i ${c}" data-id="${esc(r.id)}"><div class="rv-m"><div class="rv-c">${esc(r.c)}${c?`<span class="tag ${c}">${r.r}</span>`:""}</div><div class="mut">${esc(nom(r.p))} · semana ${r.w}${d?" · "+d:""}</div></div><div class="rv-a"><button data-cp="1">Copiar</button>${b}</div></div>`}).join(""):`<div class="mut">No hay cuentas en este filtro.</div>`;
+    return `<div class="rv-i ${c}" data-id="${esc(r.id)}"><div class="rv-m"><div class="rv-c">${esc(r.c)}${/^\d{13}$/.test(r.c)?'<span class="tag nc">Nº cliente</span>':""}${c?`<span class="tag ${c}">${r.r}</span>`:""}</div><div class="mut">${esc(nom(r.p))} · semana ${r.w}${d?" · "+d:""}</div></div><div class="rv-a"><button data-cp="1">Copiar</button>${b}</div></div>`}).join(""):`<div class="mut">No hay cuentas en este filtro.</div>`;
   $("rvm").innerHTML=tot>L.length?`Mostrando ${L.length} de ${tot}. <a href="#" id="rvmas">Ver más</a>`:(R.length>=800?"Solo se muestran las últimas 800 cuentas.":"");
 }
 $("rvf").onclick=e=>{const b=e.target.closest("button");if(!b)return;rvF=b.dataset.f;rvMax=40;renderRev()};
@@ -370,6 +392,18 @@ function renderDias(){
   $("cal").innerHTML=h;
   $("calm").textContent="Amarillo: objetivo del día cumplido ("+cum+" este mes)";
 }
+
+/* ---------- Pantalla de carga ---------- */
+const SP0=Date.now();let spDone=false;
+function corto(p){const f=p.nombre.split(" ")[0],d=D.personas.filter(x=>x.nombre.split(" ")[0]===f);return d.length>1&&p.nombre.split(" ")[1]?f+" "+p.nombre.split(" ")[1][0]+".":f}
+function spHide(){const e=$("splash");if(!e||e.classList.contains("out"))return;e.classList.add("out");setTimeout(()=>e.remove(),600)}
+function spName(n,sub){$("spn").textContent=n;$("sps").textContent=sub;$("splash").classList.add("named")}
+function spReady(){if(spDone)return;spDone=true;const mp=D.personas.find(p=>p.key===D.yo);let n="equipo",sub="Abre tu enlace personal para sumar cuentas";
+  if(mp){n=corto(mp);sub=$("myrank").textContent||("Semana "+D.semana);try{localStorage.setItem("nm",n)}catch(e){}}else{try{localStorage.removeItem("nm")}catch(e){}}
+  spName(n,sub);$("splash").classList.add("ready");setTimeout(spHide,Math.max(1000,1500-(Date.now()-SP0)))}
+try{const c=localStorage.getItem("nm");if(c)spName(c,"Cargando tus cuentas…")}catch(e){}
+setTimeout(()=>{if(!spDone){spDone=true;spHide()}},7000);
+$("splash").onclick=spHide;
 
 function boom(){if(matchMedia("(prefers-reduced-motion:reduce)").matches)return;const cs=["#ffd600","#ffffff","#b8c0f6","#ffd600"],x0=innerWidth/2,y0=innerHeight*.55;
   for(let i=0;i<34;i++){const e=document.createElement("span");e.className="conf";e.style.left=x0+"px";e.style.top=y0+"px";e.style.background=cs[i%cs.length];
