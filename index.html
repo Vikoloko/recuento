@@ -36,6 +36,9 @@ main{max-width:980px;margin:0 auto;padding:18px 16px calc(92px + env(safe-area-i
 .eyebrow{font-size:12px;font-weight:700;letter-spacing:.2em;color:var(--light)}
 .k{font:italic 900 clamp(88px,22vw,150px)/.9 var(--ff);color:#fff;font-variant-numeric:tabular-nums;margin:6px 0 8px}
 .mut{color:var(--mut);font-size:13px}
+.hoyp{display:inline-block;margin:0 0 8px;padding:4px 12px;border-radius:999px;background:rgba(255,255,255,.16);color:#fff;font-weight:800;font-size:14px}
+.hoyp[hidden]{display:none}
+.hoyp b{color:var(--yel);font-size:16px}
 .rank{margin-top:6px;font-weight:700;color:var(--yel);font-size:15px}
 .acts{display:flex;gap:12px;flex:1;min-width:250px;max-width:420px;align-items:center}
 button{font:inherit;cursor:pointer;border-radius:8px}
@@ -191,7 +194,7 @@ nav#nav button.on::before{content:"";position:absolute;top:0;left:30%;right:30%;
 <main>
 <div class="view" id="v-inicio">
 <section class="hero">
-  <div><div class="eyebrow">TUS CUENTAS ESTA SEMANA</div><div class="k" id="mine">–</div><div class="mut" id="mytot">Abre tu enlace personal para poder sumar cuentas.</div><div class="rank" id="myrank"></div></div>
+  <div><div class="eyebrow">TUS CUENTAS ESTA SEMANA</div><div class="k" id="mine">–</div><div class="hoyp" id="myhoy" hidden></div><div class="mut" id="mytot">Abre tu enlace personal para poder sumar cuentas.</div><div class="rank" id="myrank"></div></div>
   <div class="acts"><button id="mas" disabled>+1 cuenta</button><button id="des" class="ghost" disabled title="Quitar la última cuenta">Quitar</button></div>
 </section>
 
@@ -275,6 +278,7 @@ function render(){
   $("sem").textContent="Semana "+CW;
   $("who").textContent=mp?mp.nombre:"Sin identificar";$("adm").hidden=!D.admin;$("adminp").hidden=!D.admin;$("nav-admin").hidden=!D.admin;if(!D.admin&&view==="admin")go("inicio");
   $("mine").textContent=mp?own:"–";
+  {const hp=D.hoyp,e=$("myhoy");if(mp&&hp){const n=hp[me]||0;e.innerHTML="Hoy: <b>"+n+"</b> cuenta"+(n===1?"":"s");e.hidden=false}else e.hidden=true}
   const wkr=D.personas.map(p=>({k:p.key,n:p.nombre,v:p.w[CW]||0})).sort((a,b)=>b.v-a.v||a.n.localeCompare(b.n,"es")),topw=wkr.filter(r=>r.v>0).slice(0,3);
   $("pod").innerHTML=topw.length?topw.map((r,i)=>`<div class="pr${i===0?" first":""}${r.k===me?" me":""}"><span class="n">${i+1}</span><span class="nm">${esc(r.n)}</span><span class="v">${r.v}</span></div>`).join(""):'<div class="pe">Todavía nadie ha sumado esta semana. ¡Sé el primero! 🚀</div>';
   {const mo=monthOf(CW),tm=D.personas.reduce((a,p)=>a+Object.entries(p.w).reduce((b,[w,n])=>monthOf(+w)===mo?b+n:b,0),0),pc=Math.min(100,tm/GOAL_MES*100),
